@@ -1,0 +1,23 @@
+// ================================================================
+// Copyright @ TuyenPham2411. All rights reserved.
+// Licensed under the zuroostudio.com license.
+// Email: pthanhtuyen2411@gmail.com.
+// Tel: 0373707024
+// ================================================================
+const express = require('express');
+const router = express.Router();
+const controller = require('../modules/users/user.controller');
+const authMiddleware = require('../middleware/auth.middleware');
+const adminMiddleware = require('../middleware/admin.middleware');
+const upload = require('../middleware/upload.middleware');
+
+// Bảo vệ tất cả các route bên dưới
+router.use(authMiddleware, adminMiddleware);
+
+router.get('/', controller.getAllUsers);
+router.get('/:id', controller.getUserById);
+router.post('/', controller.createUserByAdmin);
+router.put('/:id', controller.updateUserByAdmin);
+router.delete('/:id', controller.deleteUser);
+
+module.exports = router;

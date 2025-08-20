@@ -1,0 +1,37 @@
+# Node modules - chứa tất cả thư viện cài bằng npm/yarn
+node_modules/
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files - chứa thông tin nhạy cảm
+.env
+.env.*      # nếu có nhiều file môi trường như .env.development, .env.production
+
+# Output / build folders
+dist/
+build/
+.out/
+.next/      # nếu dùng Next.js
+.cache/
+coverage/   # nếu dùng cho test coverage
+tmp/
+temp/
+
+# OS-specific files
+.DS_Store        # macOS
+Thumbs.db        # Windows
+
+# Editor-specific files
+.vscode/
+.idea/
+*.swp             # file tạm thời khi chỉnh sửa bằng vim
+
+# Dependency lockfiles (tùy dự án dùng gì)
+# Chỉ giữ một loại, loại trừ cái không dùng
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
