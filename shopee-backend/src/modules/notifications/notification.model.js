@@ -4,26 +4,47 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Notification = sequelize.define(
-    'Notification',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        user_id: { type: DataTypes.BIGINT, allowNull: false },
-        title: { type: DataTypes.STRING(255) },
-        content: { type: DataTypes.TEXT },
-        type: { type: DataTypes.STRING(50) },
-        target_id: { type: DataTypes.BIGINT },
-        status: { type: DataTypes.ENUM('unread', 'read'), defaultValue: 'unread' },
-        sent_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-        read_at: { type: DataTypes.DATE },
-    },
-    {
-        tableName: 'notifications',
-        timestamps: false, // Bảng của bạn đã có sent_at, không dùng timestamps của Sequelize
+module.exports = (sequelize, DataTypes) => {
+    class Notification extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            Notification.belongsTo(models.User, {
+                foreignKey: 'user_id',
+                as: 'User',
+            });
+        }
     }
-);
-
-module.exports = Notification;
+    Notification.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            user_id: DataTypes.BIGINT,
+            title: DataTypes.STRING(255),
+            content: DataTypes.TEXT,
+            type: DataTypes.STRING(50),
+            target_id: DataTypes.BIGINT,
+            status: {
+                type: DataTypes.ENUM('unread', 'read'),
+                defaultValue: 'unread',
+            },
+            sent_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            read_at: DataTypes.DATE,
+        },
+        {
+            sequelize,
+            modelName: 'Notification',
+            tableName: 'notifications',
+            timestamps: false,
+        }
+    );
+    return Notification;
+};

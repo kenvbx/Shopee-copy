@@ -4,40 +4,54 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const UserVoucher = sequelize.define(
-    'UserVoucher',
-    {
-        id: {
-            type: DataTypes.BIGINT,
-            primaryKey: true,
-            autoIncrement: true,
-        },
-        user_id: {
-            type: DataTypes.BIGINT,
-            allowNull: false,
-        },
-        voucher_id: {
-            type: DataTypes.BIGINT,
-            allowNull: false,
-        },
-        status: {
-            type: DataTypes.ENUM('unused', 'used', 'expired'),
-            defaultValue: 'unused',
-        },
-        used_at: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
-    },
-    {
-        tableName: 'user_vouchers',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: false, // Bảng của bạn không có cột updated_at
+module.exports = (sequelize, DataTypes) => {
+    class UserVoucher extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            UserVoucher.belongsTo(models.User, {
+                foreignKey: 'user_id',
+                as: 'User',
+            });
+            UserVoucher.belongsTo(models.Voucher, {
+                foreignKey: 'voucher_id',
+                as: 'Voucher',
+            });
+        }
     }
-);
-
-module.exports = UserVoucher;
+    UserVoucher.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            user_id: {
+                type: DataTypes.BIGINT,
+                allowNull: false,
+            },
+            voucher_id: {
+                type: DataTypes.BIGINT,
+                allowNull: false,
+            },
+            status: {
+                type: DataTypes.ENUM('unused', 'used', 'expired'),
+                defaultValue: 'unused',
+            },
+            used_at: DataTypes.DATE,
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'UserVoucher',
+            tableName: 'user_vouchers',
+            timestamps: false,
+        }
+    );
+    return UserVoucher;
+};

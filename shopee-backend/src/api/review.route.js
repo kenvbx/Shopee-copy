@@ -10,6 +10,8 @@ const controller = require('../modules/reviews/review.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const upload = require('../middleware/upload.middleware');
 
+router.get('/product/:productId', controller.getProductReviews);
+
 router.use(authMiddleware); // Yêu cầu đăng nhập
 
 router.get('/my-reviews', controller.getMyReviews);

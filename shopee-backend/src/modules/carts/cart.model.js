@@ -4,21 +4,46 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Cart = sequelize.define(
-    'Cart',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        user_id: { type: DataTypes.BIGINT, allowNull: false, unique: true },
-    },
-    {
-        tableName: 'carts',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+module.exports = (sequelize, DataTypes) => {
+    class Cart extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            Cart.belongsTo(models.User, {
+                foreignKey: 'user_id',
+                as: 'User',
+            });
+            Cart.hasMany(models.CartItem, {
+                foreignKey: 'cart_id',
+                as: 'CartItems',
+            });
+        }
     }
-);
-
-module.exports = Cart;
+    Cart.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            user_id: DataTypes.BIGINT,
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'Cart',
+            tableName: 'carts',
+            timestamps: false,
+        }
+    );
+    return Cart;
+};

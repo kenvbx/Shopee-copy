@@ -288,6 +288,7 @@ const ProductReviewSection = ({ productId }) => {
 
     // list & ui state
     const [reviews, setReviews] = useState([]);
+    const [pagination, setPagination] = useState(null);
     const [filter, setFilter] = useState('all'); // all | images | videos
     const [sortBy, setSortBy] = useState('newest'); // newest | oldest | high_rate | low_rate
     const [page, setPage] = useState(1);
@@ -301,35 +302,33 @@ const ProductReviewSection = ({ productId }) => {
     // fetch reviews
     useEffect(() => {
         const load = async () => {
+            if (!productId) return;
             try {
-                const res = await api.get(`/api/public/reviews/${productId}`);
-                setReviews(res.data || []);
+                // Thêm các tham số vào URL
+                const res = await api.get(`/api/reviews/product/${productId}`, {
+                    params: {
+                        page: page,
+                        limit: 5, // pageSize
+                        filter: filter,
+                        sortBy: sortBy,
+                    },
+                });
+                setReviews(res.data.data || []);
+                setPagination(res.data.pagination || null);
             } catch (e) {
                 console.error('Load reviews error', e);
+                setReviews([]);
             }
         };
-        if (productId) load();
-    }, [productId]);
+        load();
+    }, [productId, page, filter, sortBy]);
 
-    const filteredSorted = useMemo(() => {
-        let list = [...reviews];
-        if (filter === 'images') {
-            list = list.filter((r) => r.Images?.length || r.images?.length);
-        } else if (filter === 'videos') {
-            list = list.filter((r) => r.Videos?.length || r.videos?.length);
-        }
+    const handleFilterChange = (newFilter) => {
+        setFilter(newFilter);
+        setPage(1); // Reset về trang 1 mỗi khi đổi filter
+    };
 
-        if (sortBy === 'newest') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        else if (sortBy === 'oldest') list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        else if (sortBy === 'high_rate') list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        else if (sortBy === 'low_rate') list.sort((a, b) => (a.rating || 0) - (b.rating || 0));
-
-        return list;
-    }, [reviews, filter, sortBy]);
-
-    const totalPages = Math.max(1, Math.ceil(filteredSorted.length / pageSize));
-    const currentPage = clamp(page, 1, totalPages);
-    const pageItems = filteredSorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const pageItems = reviews;
 
     // --- Add state for form open/close
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -362,12 +361,13 @@ const ProductReviewSection = ({ productId }) => {
             await api.post('/api/reviews', data, { headers: { 'Content-Type': 'multipart/form-data' } });
             toast.success('Gửi đánh giá thành công!');
             setRating(0);
-            setContent('');
-            setMediaFiles([]);
-            // reload
-            const res = await api.get(`/api/public/reviews/${productId}`);
-            setReviews(res.data || []);
             setPage(1);
+            // Trigger useEffect để tải lại
+            if (page === 1) {
+                const res = await api.get(`/api/reviews/product/${productId}`, { params: { page: 1, limit: 5, filter: filter } });
+                setReviews(res.data.data || []);
+                setPagination(res.data.pagination || null);
+            }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Gửi đánh giá thất bại.');
         }
@@ -388,8 +388,7 @@ const ProductReviewSection = ({ productId }) => {
                                     className={`btn btn-outline btn-rounded ${filter === 'all' ? 'active' : ''}`}
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        setFilter('all');
-                                        setPage(1);
+                                        handleFilterChange('all');
                                     }}
                                 >
                                     Tất cả đánh giá
@@ -401,8 +400,7 @@ const ProductReviewSection = ({ productId }) => {
                                     className={`btn btn-outline btn-rounded ${filter === 'images' ? 'active' : ''}`}
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        setFilter('images');
-                                        setPage(1);
+                                        handleFilterChange('images');
                                     }}
                                 >
                                     Có hình ảnh
@@ -414,8 +412,7 @@ const ProductReviewSection = ({ productId }) => {
                                     className={`btn btn-outline btn-rounded ${filter === 'videos' ? 'active' : ''}`}
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        setFilter('videos');
-                                        setPage(1);
+                                        handleFilterChange('videos');
                                     }}
                                 >
                                     Có video
@@ -457,24 +454,24 @@ const ProductReviewSection = ({ productId }) => {
                     </ul>
 
                     {/* pagination */}
-                    {totalPages > 1 && (
+                    {pagination && pagination.totalPages > 1 && (
                         <nav className="toolbox toolbox-pagination justify-content-end">
                             <ul className="pagination">
-                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                <li className={`page-item ${pagination.currentPage === 1 ? 'disabled' : ''}`}>
                                     <a
                                         className="page-link page-link-prev"
                                         href="#"
                                         aria-label="Previous"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            setPage((p) => clamp(p - 1, 1, totalPages));
+                                            setPage((p) => p - 1);
                                         }}
                                     >
                                         <i className="d-icon-arrow-left"></i>Prev
                                     </a>
                                 </li>
-                                {Array.from({ length: totalPages }).map((_, i) => (
-                                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`} aria-current={currentPage === i + 1 ? 'page' : undefined}>
+                                {Array.from({ length: pagination.totalPages }).map((_, i) => (
+                                    <li key={i + 1} className={`page-item ${pagination.currentPage === i + 1 ? 'active' : ''}`}>
                                         <a
                                             className="page-link"
                                             href="#"
@@ -487,14 +484,14 @@ const ProductReviewSection = ({ productId }) => {
                                         </a>
                                     </li>
                                 ))}
-                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                <li className={`page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}`}>
                                     <a
                                         className="page-link page-link-next"
                                         href="#"
                                         aria-label="Next"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            setPage((p) => clamp(p + 1, 1, totalPages));
+                                            setPage((p) => p + 1);
                                         }}
                                     >
                                         Next<i className="d-icon-arrow-right"></i>

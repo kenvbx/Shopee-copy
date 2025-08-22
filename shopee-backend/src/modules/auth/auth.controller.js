@@ -123,6 +123,12 @@ const loginUser = async (req, res) => {
         // 1. Tìm người dùng theo email
         const user = await User.findOne({ where: whereCondition });
 
+        // 2. Lỗi cụ thể: Không tìm thấy người dùng
+        if (!user) {
+            const message = isEmail ? 'Email này chưa được đăng ký.' : 'Số điện thoại này chưa được đăng ký.';
+            return res.status(404).json({ message });
+        }
+
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ message: 'Thông tin đăng nhập không chính xác.' });
         }
@@ -256,7 +262,7 @@ const updateMyProfile = async (req, res) => {
     }
 };
 
-module.exports = {
+const authController = {
     registerUser,
     loginAdmin,
     loginUser,
@@ -265,3 +271,5 @@ module.exports = {
     getMyProfile,
     updateMyProfile,
 };
+
+module.exports = authController;

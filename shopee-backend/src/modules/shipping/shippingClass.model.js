@@ -4,23 +4,50 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const ShippingClass = sequelize.define(
-    'ShippingClass',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
-        slug: { type: DataTypes.STRING(100), unique: true },
-        description: { type: DataTypes.TEXT },
-    },
-    {
-        tableName: 'shipping_classes',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+module.exports = (sequelize, DataTypes) => {
+    class ShippingClass extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            ShippingClass.hasMany(models.Product, {
+                foreignKey: 'shipping_class_id',
+                as: 'Products',
+            });
+        }
     }
-);
-
-module.exports = ShippingClass;
+    ShippingClass.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: {
+                type: DataTypes.STRING(100),
+                allowNull: false,
+            },
+            slug: {
+                type: DataTypes.STRING(100),
+                allowNull: false,
+            },
+            description: DataTypes.TEXT,
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'ShippingClass',
+            tableName: 'shipping_classes',
+            timestamps: false,
+        }
+    );
+    return ShippingClass;
+};

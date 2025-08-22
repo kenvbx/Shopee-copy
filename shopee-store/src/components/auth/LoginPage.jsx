@@ -55,35 +55,6 @@ const LoginPage = () => {
                                 <p>Use your credentials to access</p>
                             </div>
                             <div className="user-form-group">
-                                <ul className="user-form-social">
-                                    <li>
-                                        <a href="#" className="facebook">
-                                            <i className="fab fa-facebook-f" />
-                                            login with facebook
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" className="twitter">
-                                            <i className="fab fa-twitter" />
-                                            login with twitter
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" className="google">
-                                            <i className="fab fa-google" />
-                                            login with google
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" className="instagram">
-                                            <i className="fab fa-instagram" />
-                                            login with instagram
-                                        </a>
-                                    </li>
-                                </ul>
-                                <div className="user-form-divider">
-                                    <p>or</p>
-                                </div>
                                 <form onSubmit={handleSubmit} className="user-form">
                                     <div className="form-group">
                                         <input type="text" name="emailOrPhone" className="form-control" placeholder="Enter your email or phone" value={formData.emailOrPhone} onChange={handleChange} />

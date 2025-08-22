@@ -4,25 +4,54 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const OrderItem = sequelize.define(
-    'OrderItem',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        order_id: { type: DataTypes.BIGINT, allowNull: false },
-        product_id: { type: DataTypes.BIGINT },
-        variation_id: { type: DataTypes.BIGINT },
-        product_name: { type: DataTypes.STRING(255) },
-        quantity: { type: DataTypes.INTEGER },
-        price: { type: DataTypes.DECIMAL(12, 2) },
-        seller_id: { type: DataTypes.BIGINT },
-    },
-    {
-        tableName: 'order_items',
-        timestamps: false, // Bảng này không có timestamps theo CSDL của bạn
+module.exports = (sequelize, DataTypes) => {
+    class OrderItem extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            OrderItem.belongsTo(models.Order, {
+                foreignKey: 'order_id',
+                as: 'Order',
+            });
+            OrderItem.belongsTo(models.Product, {
+                foreignKey: 'product_id',
+                as: 'Product',
+            });
+            OrderItem.belongsTo(models.Variation, {
+                foreignKey: 'variation_id',
+                as: 'Variation',
+            });
+        }
     }
-);
-
-module.exports = OrderItem;
+    OrderItem.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            order_id: DataTypes.BIGINT,
+            product_id: DataTypes.BIGINT,
+            variation_id: DataTypes.BIGINT,
+            product_name: DataTypes.STRING(255),
+            sku: DataTypes.STRING(100),
+            image_url: DataTypes.STRING(255),
+            seller_id: DataTypes.BIGINT,
+            status: {
+                type: DataTypes.ENUM('pending', 'shipped', 'cancelled', 'refunded', 'completed'),
+                defaultValue: 'pending',
+            },
+            quantity: DataTypes.INTEGER,
+            price: DataTypes.DECIMAL(12, 2),
+        },
+        {
+            sequelize,
+            modelName: 'OrderItem',
+            tableName: 'order_items',
+            timestamps: false,
+        }
+    );
+    return OrderItem;
+};

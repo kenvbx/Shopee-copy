@@ -8,6 +8,8 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
+import AuthModal from '../components/auth/AuthModal';
+import QuickViewModal from '../components/common/QuickViewModal';
 
 function MainLayout() {
     return (
@@ -19,9 +21,8 @@ function MainLayout() {
 
             <Footer />
 
-            {/* Đặt các component toàn cục khác ở đây */}
-            {/* <MiniCart /> */}
-            {/* <AuthModal /> */}
+            <AuthModal />
+            <QuickViewModal />
         </div>
     );
 }

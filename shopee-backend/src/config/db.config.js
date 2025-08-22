@@ -4,20 +4,43 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { Sequelize } = require('sequelize');
+require('dotenv').config();
 
-// Nạp thông tin kết nối từ file .env
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'mysql',
-    logging: false,
-    pool: {
-        max: 10, // Số lượng kết nối tối đa
-        min: 0, // Số lượng kết nối tối thiểu
-        acquire: 30000, // Thời gian tối đa (ms) để cố gắng lấy một kết nối trước khi báo lỗi timeout
-        idle: 10000, // Thời gian tối đa (ms) một kết nối có thể "nhàn rỗi" trước khi được giải phóng
+module.exports = {
+    development: {
+        username: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        dialect: 'mysql',
+        pool: {
+            max: 10,
+            min: 0,
+            acquire: 30000,
+            idle: 10000,
+        },
     },
-});
-
-module.exports = sequelize;
+    test: {
+        username: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME_TEST, // Có thể dùng DB khác cho testing
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        dialect: 'mysql',
+    },
+    production: {
+        username: process.env.DB_USER_PROD, // Nên dùng user/pass riêng cho production
+        password: process.env.DB_PASSWORD_PROD,
+        database: process.env.DB_NAME_PROD,
+        host: process.env.DB_HOST_PROD,
+        port: process.env.DB_PORT_PROD,
+        dialect: 'mysql',
+        pool: {
+            max: 15,
+            min: 5,
+            acquire: 60000,
+            idle: 30000,
+        },
+    },
+};

@@ -4,93 +4,95 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
+'use strict';
+const { Model } = require('sequelize');
 const bcrypt = require('bcryptjs');
-const sequelize = require('../../config/db.config');
 
-const User = sequelize.define(
-    'User',
-    {
-        id: {
-            type: DataTypes.BIGINT,
-            primaryKey: true,
-            autoIncrement: true,
-        },
-        name: {
-            type: DataTypes.STRING(100),
-            allowNull: false,
-        },
-        username: {
-            type: DataTypes.STRING(100),
-            unique: true,
-            allowNull: true,
-        },
-        email: {
-            type: DataTypes.STRING(100),
-            allowNull: true,
-            unique: true,
-            validate: {
-                isEmail: true,
-            },
-        },
-        password: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        role: {
-            type: DataTypes.STRING(50),
-            defaultValue: 'user',
-        },
-        phone: {
-            type: DataTypes.STRING(20),
-            allowNull: true,
-        },
-        gender: {
-            type: DataTypes.ENUM('male', 'female', 'other'),
-            defaultValue: 'other',
-        },
-
-        birthday: {
-            type: DataTypes.DATE,
-        },
-
-        avatar: { type: DataTypes.STRING(255) },
-        status: {
-            type: DataTypes.ENUM('active', 'inactive', 'banned'),
-            defaultValue: 'active',
-        },
-        last_login: { type: DataTypes.DATE },
-        reset_token: {
-            type: DataTypes.STRING,
-            allowNull: true,
-        },
-        reset_token_expires: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
-    },
-    {
-        tableName: 'users', // Tên bảng trong database
-        timestamps: true, // Tự động thêm createdAt và updatedAt
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
-        hooks: {
-            // Tự động băm mật khẩu trước khi tạo người dùng mới
-            beforeCreate: async (user) => {
-                if (user.password) {
-                    const salt = await bcrypt.genSalt(10);
-                    user.password = await bcrypt.hash(user.password, salt);
-                }
-            },
-            // (Tùy chọn) Băm mật khẩu cả khi cập nhật
-            beforeUpdate: async (user) => {
-                if (user.changed('password')) {
-                    const salt = await bcrypt.genSalt(10);
-                    user.password = await bcrypt.hash(user.password, salt);
-                }
-            },
-        },
+module.exports = (sequelize, DataTypes) => {
+    class User extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            User.hasMany(models.UserAddress, {
+                foreignKey: 'user_id',
+                as: 'Addresses',
+            });
+            User.hasOne(models.Cart, {
+                foreignKey: 'user_id',
+                as: 'Cart',
+            });
+            User.hasMany(models.Order, {
+                foreignKey: 'user_id',
+                as: 'Orders',
+            });
+            User.hasMany(models.ProductReview, {
+                foreignKey: 'user_id',
+                as: 'Reviews',
+            });
+            User.hasMany(models.Wishlist, {
+                foreignKey: 'user_id',
+                as: 'WishlistItems',
+            });
+        }
     }
-);
+    User.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: DataTypes.STRING(100),
+            username: DataTypes.STRING(100),
+            email: {
+                type: DataTypes.STRING(100),
+                unique: true,
+            },
+            password: DataTypes.STRING(255),
+            role: {
+                type: DataTypes.STRING(50),
+                defaultValue: 'user',
+            },
+            phone: DataTypes.STRING(20),
+            avatar: DataTypes.STRING(255),
+            gender: DataTypes.ENUM('male', 'female', 'other'),
+            birthday: DataTypes.DATE,
+            status: {
+                type: DataTypes.ENUM('active', 'inactive', 'banned'),
+                defaultValue: 'active',
+            },
+            last_login: DataTypes.DATE,
+            reset_token: DataTypes.STRING(100),
+            reset_token_expires: DataTypes.DATE,
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'User',
+            tableName: 'users',
+            timestamps: false,
+            hooks: {
+                // Tự động băm mật khẩu trước khi tạo hoặc cập nhật user
+                beforeSave: async (user, options) => {
+                    if (user.changed('password')) {
+                        const salt = await bcrypt.genSalt(10);
+                        user.password = await bcrypt.hash(user.password, salt);
+                    }
+                },
+            },
+        }
+    );
 
-module.exports = User;
+    // Thêm một phương thức để kiểm tra mật khẩu
+    User.prototype.isValidPassword = async function (password) {
+        return await bcrypt.compare(password, this.password);
+    };
+
+    return User;
+};

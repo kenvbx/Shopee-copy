@@ -4,23 +4,53 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const VariationImage = sequelize.define(
-    'VariationImage',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        variation_id: { type: DataTypes.BIGINT, allowNull: false },
-        url: { type: DataTypes.STRING(255), allowNull: false },
-        position: { type: DataTypes.INTEGER, defaultValue: 0 },
-    },
-    {
-        tableName: 'variation_images',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+module.exports = (sequelize, DataTypes) => {
+    class VariationImage extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            VariationImage.belongsTo(models.Variation, {
+                foreignKey: 'variation_id',
+                as: 'Variation',
+            });
+        }
     }
-);
-
-module.exports = VariationImage;
+    VariationImage.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            variation_id: {
+                type: DataTypes.BIGINT,
+                allowNull: false,
+            },
+            url: {
+                type: DataTypes.STRING(255),
+                allowNull: false,
+            },
+            position: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
+            },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'VariationImage',
+            tableName: 'variation_images',
+            timestamps: false,
+        }
+    );
+    return VariationImage;
+};

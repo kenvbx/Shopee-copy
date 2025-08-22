@@ -11,18 +11,36 @@ const authMiddleware = require('../middleware/auth.middleware');
 const adminMiddleware = require('../middleware/admin.middleware');
 const upload = require('../middleware/upload.middleware');
 
-router.use(authMiddleware, adminMiddleware);
+// ==========================================================
+// == 1. CÁC ROUTE CÔNG KHAI (PUBLIC ROUTES)                ==
+// == -> Đặt tất cả các route không cần đăng nhập ở đây      ==
+// ==========================================================
 
-router.route('/').get(controller.getAllProducts).post(controller.createProduct);
+// Lấy danh sách sản phẩm (có filter, sort, paginate)
+router.get('/', controller.getAllProducts);
 
-router.route('/:id').get(controller.getProductById).put(controller.updateProduct).delete(controller.deleteProduct);
+// Lấy sản phẩm theo IDs (cho chức năng Vừa xem)
+router.post('/by-ids', controller.getProductsByIds);
 
-router.route('/:id/upload-image').post(upload.single('main_image'), controller.uploadProductImage);
+// Lấy sản phẩm theo ID (tránh xung đột với slug)
+router.get('/id/:id', controller.getProductById);
 
-router.route('/:id/upload-album').post(upload.array('album_images', 10), controller.uploadProductAlbum);
+// Lấy sản phẩm theo SLUG (PHẢI ĐẶT SAU CÙNG trong nhóm public)
+router.get('/:slug', controller.getProductBySlug);
 
-router.route('/:id/attributes').put(controller.updateProductAttributes);
+// ==========================================================
+// == 2. CÁC ROUTE CẦN BẢO VỆ (PROTECTED ROUTES)            ==
+// == -> Các route cho admin, cần đăng nhập và có quyền     ==
+// ==========================================================
 
-router.delete('/album-image/:imageId', authMiddleware, adminMiddleware, controller.deleteProductImage);
+router.post('/', authMiddleware, adminMiddleware, controller.createProduct);
+
+router.put('/:id', authMiddleware, adminMiddleware, controller.updateProduct);
+
+router.delete('/:id', authMiddleware, adminMiddleware, controller.deleteProduct);
+
+// ==========================================================
+// == 3. EXPORT ROUTER                                     ==
+// ==========================================================
 
 module.exports = router;

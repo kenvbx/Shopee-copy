@@ -4,24 +4,61 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const CartItem = sequelize.define(
-    'CartItem',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        cart_id: { type: DataTypes.BIGINT, allowNull: false },
-        product_id: { type: DataTypes.BIGINT, allowNull: false },
-        variation_id: { type: DataTypes.BIGINT },
-        quantity: { type: DataTypes.INTEGER, defaultValue: 1 },
-    },
-    {
-        tableName: 'cart_items',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+module.exports = (sequelize, DataTypes) => {
+    class CartItem extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            CartItem.belongsTo(models.Cart, {
+                foreignKey: 'cart_id',
+                as: 'Cart',
+            });
+            CartItem.belongsTo(models.Product, {
+                foreignKey: 'product_id',
+                as: 'Product',
+            });
+            CartItem.belongsTo(models.Variation, {
+                foreignKey: 'variation_id',
+                as: 'Variation',
+            });
+        }
     }
-);
-
-module.exports = CartItem;
+    CartItem.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            cart_id: DataTypes.BIGINT,
+            product_id: DataTypes.BIGINT,
+            variation_id: DataTypes.BIGINT,
+            quantity: {
+                type: DataTypes.INTEGER,
+                defaultValue: 1,
+            },
+            selected: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: true,
+            },
+            added_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: DataTypes.DATE,
+        },
+        {
+            sequelize,
+            modelName: 'CartItem',
+            tableName: 'cart_items',
+            timestamps: false,
+        }
+    );
+    return CartItem;
+};

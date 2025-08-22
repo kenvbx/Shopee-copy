@@ -12,6 +12,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { OptionsProvider } from './context/OptionsContext';
 import { WishlistProvider } from './context/WishlistContext';
+import { QuickViewProvider } from './context/QuickViewContext';
 // import "./i18n";
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -21,7 +22,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <CartProvider>
                     <OptionsProvider>
                         <WishlistProvider>
-                            <App />
+                            <QuickViewProvider>
+                                <App />
+                            </QuickViewProvider>
                         </WishlistProvider>
                     </OptionsProvider>
                 </CartProvider>

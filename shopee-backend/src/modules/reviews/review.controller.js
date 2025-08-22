@@ -7,6 +7,27 @@
 const db = require('../../models');
 const { Review, Product, User, ReviewImage } = db; // lấy model từ index.js
 const sequelize = db.sequelize; // lấy instance sequelize
+const { Op } = require('sequelize');
+
+const updateProductRatings = async (productId) => {
+    try {
+        const stats = await db.ProductReview.findOne({
+            where: { product_id: productId, is_approved: true },
+            attributes: [
+                [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'rating_count'],
+                [db.sequelize.fn('AVG', db.sequelize.col('rating')), 'rating_avg'],
+            ],
+            raw: true,
+        });
+
+        const rating_count = parseInt(stats.rating_count, 10) || 0;
+        const rating_avg = parseFloat(stats.rating_avg) || 0;
+
+        await db.Product.update({ rating_count, rating_avg }, { where: { id: productId } });
+    } catch (error) {
+        console.error(`Lỗi khi cập nhật rating cho sản phẩm ${productId}:`, error);
+    }
+};
 
 // Lấy tất cả đánh giá của người dùng đang đăng nhập
 const getMyReviews = async (req, res) => {
@@ -36,18 +57,60 @@ const getMyReviews = async (req, res) => {
 const getProductReviews = async (req, res) => {
     try {
         const { productId } = req.params;
-        const reviews = await Review.findAll({
-            where: { product_id: productId, is_approved: true },
-            include: [
-                {
-                    model: User,
-                    attributes: ['name', 'avatar'], // Lấy tên và avatar của người dùng
-                },
-                { model: ReviewImage, as: 'images' },
-            ],
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const filter = req.query.filter || 'all';
+        const offset = (page - 1) * limit;
+
+        let whereCondition = {
+            product_id: productId,
+            is_approved: true,
+        };
+
+        let includeCondition = [
+            {
+                model: db.User,
+                as: 'User',
+                attributes: ['name', 'avatar'],
+            },
+            {
+                model: db.ReviewImage,
+                as: 'ReviewImages',
+                attributes: ['image_url'],
+            },
+        ];
+
+        // Nếu lọc theo 'images', yêu cầu phải có ít nhất một ảnh liên kết
+        if (filter === 'images') {
+            const imageInclude = includeCondition.find((i) => i.as === 'ReviewImages');
+            if (imageInclude) {
+                imageInclude.required = true;
+            }
+        }
+
+        // Nếu lọc theo 'videos', chỉ lấy review có trường 'video_url' không rỗng
+        if (filter === 'videos') {
+            whereCondition.video_url = { [Op.ne]: null, [Op.ne]: '' };
+        }
+        // ------------------------------------
+
+        const { count, rows } = await db.ProductReview.findAndCountAll({
+            where: whereCondition,
+            include: includeCondition,
+            limit,
+            offset,
             order: [['created_at', 'DESC']],
+            distinct: true,
         });
-        res.status(200).json(reviews);
+
+        res.status(200).json({
+            data: rows,
+            pagination: {
+                totalItems: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+            },
+        });
     } catch (error) {
         console.error('--- LỖI CHI TIẾT KHI LẤY ĐÁNH GIÁ ---');
         console.error(error); // In ra toàn bộ đối tượng lỗi
@@ -65,13 +128,13 @@ const createReview = async (req, res) => {
     try {
         const userId = req.user.id;
         // Bây giờ req.body sẽ có dữ liệu
-        const { productId, rating, content } = req.body;
+        const { productId, rating, content, title, images } = req.body;
 
         if (!productId || !rating) {
             return res.status(400).json({ message: 'Thiếu dữ liệu bắt buộc.', missing: !productId ? ['productId'] : ['rating'] });
         }
 
-        const newReview = await Review.create(
+        const newReview = await db.ProductReview.create(
             {
                 product_id: productId,
                 user_id: userId,
@@ -96,6 +159,9 @@ const createReview = async (req, res) => {
         }
 
         await transaction.commit();
+
+        await updateProductRatings(productId);
+
         res.status(201).json(newReview);
     } catch (error) {
         await transaction.rollback();

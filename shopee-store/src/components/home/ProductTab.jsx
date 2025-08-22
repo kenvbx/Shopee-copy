@@ -22,14 +22,14 @@ const DEFAULT_TABS = [
     { id: 'all', label: 'View All', tag: null },
 ];
 
-const ProductTag = ({ tabs = DEFAULT_TABS, limit = 20 }) => {
+const ProductTab = ({ tabs = DEFAULT_TABS, limit = 20 }) => {
     const [activeId, setActiveId] = useState(tabs[0]?.id || 'new');
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState([]);
 
     const sliderSettings = useMemo(
         () => ({
-            dots: true,
+            dots: false,
             arrows: false,
             infinite: items.length > 5,
             speed: 500,
@@ -127,4 +127,4 @@ const ProductTag = ({ tabs = DEFAULT_TABS, limit = 20 }) => {
     );
 };
 
-export default ProductTag;
+export default ProductTab;

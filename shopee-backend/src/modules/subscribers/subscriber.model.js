@@ -4,22 +4,42 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Subscriber = sequelize.define(
-    'Subscriber',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        email: { type: DataTypes.STRING(191), allowNull: false, unique: true, validate: { isEmail: true } },
-        status: { type: DataTypes.ENUM('subscribed', 'unsubscribed'), defaultValue: 'subscribed' },
-    },
-    {
-        tableName: 'subscribers',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: false,
+module.exports = (sequelize, DataTypes) => {
+    class Subscriber extends Model {
+        static associate(models) {
+            // Model này không có mối quan hệ nào
+        }
     }
-);
-
-module.exports = Subscriber;
+    Subscriber.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            email: {
+                type: DataTypes.STRING(191),
+                allowNull: false,
+                unique: true,
+            },
+            status: {
+                type: DataTypes.ENUM('subscribed', 'unsubscribed'),
+                defaultValue: 'subscribed',
+            },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'Subscriber',
+            tableName: 'subscribers',
+            timestamps: false,
+        }
+    );
+    return Subscriber;
+};

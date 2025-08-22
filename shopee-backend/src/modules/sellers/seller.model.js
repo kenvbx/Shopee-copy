@@ -4,34 +4,73 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Seller = sequelize.define(
-    'Seller',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        user_id: { type: DataTypes.BIGINT },
-        name: { type: DataTypes.STRING(100), allowNull: false },
-        slug: { type: DataTypes.STRING(100), unique: true },
-        logo: { type: DataTypes.STRING(255) },
-        cover: { type: DataTypes.STRING(255) },
-        description: { type: DataTypes.TEXT },
-        phone: { type: DataTypes.STRING(20) },
-        email: { type: DataTypes.STRING(100), validate: { isEmail: true } },
-        address: { type: DataTypes.TEXT },
-        status: {
-            type: DataTypes.ENUM('pending', 'active', 'suspended', 'closed'),
-            defaultValue: 'pending',
-        },
-        is_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
-    },
-    {
-        tableName: 'sellers',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+module.exports = (sequelize, DataTypes) => {
+    class Seller extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            Seller.belongsTo(models.User, {
+                foreignKey: 'user_id',
+                as: 'User',
+            });
+            Seller.hasMany(models.Product, {
+                foreignKey: 'seller_id',
+                as: 'Products',
+            });
+        }
     }
-);
-
-module.exports = Seller;
+    Seller.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            user_id: DataTypes.BIGINT,
+            name: {
+                type: DataTypes.STRING(100),
+                allowNull: false,
+            },
+            slug: {
+                type: DataTypes.STRING(100),
+                unique: true,
+            },
+            logo: DataTypes.STRING(255),
+            cover: DataTypes.STRING(255),
+            description: DataTypes.TEXT,
+            phone: DataTypes.STRING(20),
+            email: {
+                type: DataTypes.STRING(100),
+                validate: { isEmail: true },
+            },
+            address: DataTypes.TEXT,
+            status: {
+                type: DataTypes.ENUM('pending', 'active', 'suspended', 'closed'),
+                defaultValue: 'pending',
+            },
+            is_verified: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'Seller',
+            tableName: 'sellers',
+            timestamps: true, // Bật timestamps
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        }
+    );
+    return Seller;
+};

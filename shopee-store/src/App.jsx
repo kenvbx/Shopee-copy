@@ -12,15 +12,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import HomePage from './pages/HomePage';
 import MainLayout from './layouts/MainLayout';
 import MiniCart from './components/MiniCart';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProductListPage from './pages/ProductListPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import SearchPage from './pages/SearchPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import AccountLayout from './layouts/AccountLayout';
 import ProfilePage from './pages/ProfilePage';
 import MyOrdersPage from './pages/MyOrdersPage';
@@ -41,7 +37,7 @@ import FeedbackPage from './pages/FeedbackPage';
 function App() {
     return (
         <>
-            <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+            <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <Routes>
                 {/* Tất cả các route bên trong đây sẽ có chung Header và Footer */}
                 <Route path="/" element={<MainLayout />}>
@@ -65,9 +61,6 @@ function App() {
                         <Route path="feedback" element={<FeedbackPage />} />
                     </Route>
 
-                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                    <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-
                     <Route path="/products" element={<ProductListPage />} />
                     <Route path="/product/:slug" element={<ProductDetailPage />} />
                     <Route path="/cart" element={<CartPage />} />
@@ -84,9 +77,6 @@ function App() {
                         }
                     />
                 </Route>
-
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
             </Routes>
             <MiniCart />
         </>

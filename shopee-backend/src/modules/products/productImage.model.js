@@ -4,36 +4,49 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const ProductImage = sequelize.define(
-    'ProductImage',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        product_id: { type: DataTypes.BIGINT, allowNull: false },
-        type: { type: DataTypes.ENUM('image', 'video'), defaultValue: 'image' },
-        url: { type: DataTypes.STRING(255), allowNull: false },
-        position: { type: DataTypes.INTEGER, defaultValue: 0 },
-        caption: { type: DataTypes.STRING(255) },
-        file_size: { type: DataTypes.INTEGER },
-        width_px: { type: DataTypes.INTEGER },
-        height_px: { type: DataTypes.INTEGER },
-        video_thumb: { type: DataTypes.STRING(255) },
-        moderation_status: {
-            type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-            defaultValue: 'approved',
-        },
-        moderation_note: { type: DataTypes.STRING(255) },
-        moderated_by: { type: DataTypes.BIGINT },
-        moderated_at: { type: DataTypes.DATE },
-    },
-    {
-        tableName: 'product_images',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+module.exports = (sequelize, DataTypes) => {
+    class ProductImage extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            ProductImage.belongsTo(models.Product, {
+                foreignKey: 'product_id',
+                as: 'Product',
+            });
+        }
     }
-);
-
-module.exports = ProductImage;
+    ProductImage.init(
+        {
+            id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+            product_id: { type: DataTypes.BIGINT, allowNull: false },
+            type: { type: DataTypes.ENUM('image', 'video'), defaultValue: 'image' },
+            url: { type: DataTypes.STRING(255), allowNull: false },
+            position: { type: DataTypes.INTEGER, defaultValue: 0 },
+            caption: { type: DataTypes.STRING(255) },
+            file_size: { type: DataTypes.INTEGER },
+            width_px: { type: DataTypes.INTEGER },
+            height_px: { type: DataTypes.INTEGER },
+            video_thumb: { type: DataTypes.STRING(255) },
+            moderation_status: {
+                type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+                defaultValue: 'approved',
+            },
+            moderation_note: { type: DataTypes.STRING(255) },
+            moderated_by: { type: DataTypes.BIGINT },
+            moderated_at: { type: DataTypes.DATE },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'ProductImage',
+            tableName: 'product_images',
+            timestamps: false,
+        }
+    );
+    return ProductImage;
+};

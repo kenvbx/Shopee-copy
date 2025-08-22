@@ -4,11 +4,11 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import api from '../../api/axiosInstance';
 import { Link, useNavigate } from 'react-router-dom';
 import { useOptions } from '../../context/OptionsContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, AuthContext } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import Navbar from '../common/Navbar';
@@ -25,7 +25,7 @@ function Header() {
 
     const [categories, setCategories] = useState([]);
 
-    const { user, handleShowLogin, handleShowRegister } = useAuth();
+    const { user, openModal, logout } = useContext(AuthContext);
 
     const API_URL = import.meta.env.VITE_API_BASE_URL;
     const logoSrc = options.site_logo ? `${API_URL}/${options.site_logo}` : '/images/logo.png';
@@ -131,16 +131,11 @@ function Header() {
                             //     <img src={user.avatar ? `${API_URL}/${user.avatar}` : '/images/user.png.jpeg'} alt={user.name} className="rounded-circle me-3" />
                             //     <span>{user.name}</span>
                             // </Link>
-                            <>
-                                <Link className="login-link" to="/login" data-toggle="login-modal">
-                                    <i className="d-icon-user" />
-                                    Đăng nhập
-                                </Link>
-                                <span className="delimiter">/</span>
-                                <Link className="register-link ml-0" to="/register" data-toggle="login-modal">
-                                    Đăng ký
-                                </Link>
-                            </>
+
+                            <Link className="login-link" to="#" type="button" onClick={openModal} data-toggle="login-modal">
+                                <i className="d-icon-user" />
+                                Đăng nhập
+                            </Link>
                         )}
                     </div>
                 </div>

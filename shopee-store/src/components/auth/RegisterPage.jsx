@@ -64,35 +64,6 @@ const RegisterPage = () => {
                                 <p>Setup A New Account In A Minute</p>
                             </div>
                             <div className="user-form-group">
-                                <ul className="user-form-social">
-                                    <li>
-                                        <a href="#" className="facebook">
-                                            <i className="fab fa-facebook-f" />
-                                            Join with facebook
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" className="twitter">
-                                            <i className="fab fa-twitter" />
-                                            Join with twitter
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" className="google">
-                                            <i className="fab fa-google" />
-                                            Join with google
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" className="instagram">
-                                            <i className="fab fa-instagram" />
-                                            Join with instagram
-                                        </a>
-                                    </li>
-                                </ul>
-                                <div className="user-form-divider">
-                                    <p>or</p>
-                                </div>
                                 <form className="user-form" onSubmit={handleSubmit}>
                                     <div className="form-group">
                                         <input type="text" name="name" className="form-control" placeholder="Enter your name" value={formData.name} onChange={handleChange} required />

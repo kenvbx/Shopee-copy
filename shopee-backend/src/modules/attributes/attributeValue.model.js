@@ -4,22 +4,53 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const AttributeValue = sequelize.define(
-    'AttributeValue',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        attribute_id: { type: DataTypes.BIGINT, allowNull: false },
-        value: { type: DataTypes.STRING(100), allowNull: false },
-        slug: { type: DataTypes.STRING(100) },
-        description: { type: DataTypes.TEXT },
-    },
-    {
-        tableName: 'product_attribute_values',
-        timestamps: false,
+module.exports = (sequelize, DataTypes) => {
+    class AttributeValue extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            AttributeValue.belongsTo(models.Attribute, {
+                foreignKey: 'attribute_id',
+                as: 'Attribute',
+            });
+            AttributeValue.belongsToMany(models.Product, {
+                through: 'product_attribute_value_map', // Tên bảng trung gian
+                foreignKey: 'value_id',
+                otherKey: 'product_id',
+                as: 'Products',
+            });
+        }
     }
-);
-
-module.exports = AttributeValue;
+    AttributeValue.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            attribute_id: {
+                type: DataTypes.BIGINT,
+                allowNull: false,
+            },
+            value: {
+                type: DataTypes.STRING(100),
+                allowNull: false,
+            },
+            slug: DataTypes.STRING(100),
+            description: DataTypes.TEXT,
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'AttributeValue',
+            tableName: 'product_attribute_values',
+            timestamps: false,
+        }
+    );
+    return AttributeValue;
+};

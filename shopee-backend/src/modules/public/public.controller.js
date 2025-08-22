@@ -4,7 +4,8 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { Product, ProductCategory, Brand, Tag, ProductImage, Variation, VariationImage, AttributeValue, Attribute, Banner, Subscriber, sequelize, Post, User } = require('../../models');
+const db = require('../../models/index.js');
+const { Product, ProductCategory, Brand, Tag, ProductImage, Variation, VariationImage, AttributeValue, Attribute, Banner, Subscriber, sequelize, Post, User, ProductReview } = require('../../models');
 const { Op } = require('sequelize');
 
 // HÀM HELPER (có thể đặt ở đầu file):
@@ -59,7 +60,7 @@ const getPublicProducts = async (req, res) => {
             order: [['created_at', 'DESC']],
             include: [
                 // Lấy kèm các thông tin cần thiết
-                { model: Brand, attributes: ['name'] },
+                { model: Brand, as: 'Brand', attributes: ['name'] },
             ],
             distinct: true, // Quan trọng khi dùng limit với include
         });
@@ -77,6 +78,7 @@ const getPublicProducts = async (req, res) => {
 const getPublicProductBySlug = async (req, res) => {
     try {
         const { slug } = req.params;
+        // BƯỚC 1: Lấy thông tin sản phẩm chính
         const product = await Product.findOne({
             where: {
                 slug: slug,
@@ -84,14 +86,17 @@ const getPublicProductBySlug = async (req, res) => {
                 visibility: 'public',
             },
             include: [
-                { model: ProductCategory, through: { attributes: [] } },
-                { model: Brand },
-                { model: Tag, through: { attributes: [] } },
+                {
+                    model: ProductCategory,
+                    as: 'ProductCategories',
+                    through: { attributes: [] },
+                },
+                { model: Brand, as: 'Brand' },
+                { model: Tag, as: 'Tags', through: { attributes: [] } },
                 { model: ProductImage, as: 'ProductImages' },
                 {
                     model: Variation,
                     as: 'Variations',
-                    // Bỏ include lồng nhau ở đây vì không cần nữa
                     include: [{ model: VariationImage, as: 'GalleryImages' }],
                 },
             ],
@@ -101,7 +106,22 @@ const getPublicProductBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Không tìm thấy sản phẩm.' });
         }
 
-        res.status(200).json(product);
+        // BƯỚC 2: Thêm logic tính toán rating (giống như đã làm ở controller kia)
+        const ratingStats = await ProductReview.findOne({
+            where: { product_id: product.id },
+            attributes: [
+                [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'rating_count'],
+                [db.sequelize.fn('AVG', db.sequelize.col('rating')), 'rating_avg'],
+            ],
+            raw: true,
+        });
+
+        // BƯỚC 3: Gộp kết quả lại
+        const productJson = product.toJSON();
+        productJson.rating_count = parseInt(ratingStats.rating_count, 10) || 0;
+        productJson.rating_avg = ratingStats.rating_avg ? parseFloat(ratingStats.rating_avg).toFixed(2) : '0.00';
+
+        res.status(200).json(productJson);
     } catch (error) {
         console.error('Lỗi khi tải chi tiết sản phẩm:', error);
         res.status(500).json({ message: 'Lỗi máy chủ.' });
@@ -376,6 +396,7 @@ const getFeaturedBrands = async (req, res) => {
             include: [
                 {
                     model: Product,
+                    as: 'Products',
                     attributes: [], // We only need this for counting, so no product attributes are needed
                     where: { status: 'active' }, // Only count active products
                     required: false, // Use LEFT JOIN to include brands with 0 products
@@ -452,7 +473,7 @@ const getRelatedProducts = async (req, res) => {
 
         // 1. Tìm danh mục của sản phẩm hiện tại
         const currentProduct = await Product.findByPk(productId, {
-            include: [{ model: ProductCategory, attributes: ['id'] }],
+            include: [{ model: ProductCategory, as: 'ProductCategories', attributes: ['id'], through: { attributes: [] } }],
         });
 
         if (!currentProduct || !currentProduct.ProductCategories.length) {
@@ -465,16 +486,25 @@ const getRelatedProducts = async (req, res) => {
         const relatedProducts = await Product.findAll({
             limit: limit,
             where: {
-                id: { [Op.ne]: productId }, // Loại trừ chính sản phẩm hiện tại
+                id: { [Op.ne]: productId },
                 status: 'active',
+                visibility: 'public',
             },
             include: [
                 {
                     model: ProductCategory,
+                    as: 'ProductCategories',
                     where: { id: { [Op.in]: categoryIds } },
                     attributes: [],
+                    through: { attributes: [] },
+                },
+                {
+                    model: Brand,
+                    as: 'Brand',
+                    attributes: ['name', 'slug'],
                 },
             ],
+            distinct: true,
         });
 
         res.status(200).json(relatedProducts);

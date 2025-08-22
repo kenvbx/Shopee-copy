@@ -5,8 +5,10 @@
 // Tel: 0373707024
 // ================================================================
 const fs = require('fs');
+const db = require('../../models/index.js');
+const { Op } = require('sequelize');
 const path = require('path');
-const { Product, ProductCategory, Brand, Tag, ProductImage, Variation, Attribute, AttributeValue, VariationImage } = require('../../models');
+const { Product, ProductCategory, Brand, Tag, ProductImage, Variation, Attribute, AttributeValue, VariationImage, ProductReview, sequelize } = require('../../models');
 const slugify = require('slugify');
 
 const getAllProducts = async (req, res) => {
@@ -516,6 +518,93 @@ const deleteProduct = async (req, res) => {
     }
 };
 
+const getProductsByIds = async (req, res) => {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: 'Product IDs are required' });
+    }
+
+    try {
+        const products = await db.Product.findAll({
+            where: {
+                id: {
+                    [Op.in]: ids,
+                },
+            },
+            // Optional: specify attributes to reduce payload size
+            attributes: ['id', 'name', 'slug', 'main_image', 'price', 'sale_price'],
+        });
+
+        // Preserve the order of IDs from the request
+        const sortedProducts = ids.map((id) => products.find((p) => p.id === id)).filter(Boolean);
+
+        res.status(200).json(sortedProducts);
+    } catch (error) {
+        console.error('Error fetching products by IDs:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+const getProductBySlug = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const product = await db.Product.findOne({
+            where: { slug: slug },
+
+            include: [
+                {
+                    model: db.ProductCategory,
+                    as: 'ProductCategories',
+                    through: { attributes: [] },
+                },
+                { model: db.Brand, as: 'Brand' },
+                { model: db.Tag, as: 'Tags', through: { attributes: [] } },
+                { model: db.ProductImage, as: 'ProductImages' },
+                {
+                    model: db.AttributeValue,
+                    as: 'AttributeValues',
+                    through: { attributes: [] },
+                    include: [{ model: db.Attribute, as: 'Attribute' }],
+                },
+                {
+                    model: db.Variation,
+                    as: 'Variations',
+                    include: [{ model: db.VariationImage, as: 'GalleryImages' }],
+                },
+                { model: db.Variation, as: 'DefaultVariation' },
+            ],
+        });
+
+        if (!product) {
+            return res.status(404).json({ message: 'Không tìm thấy sản phẩm.' });
+        }
+
+        const ratingStats = await ProductReview.findOne({
+            where: { product_id: product.id },
+            attributes: [
+                [sequelize.fn('COUNT', sequelize.col('id')), 'rating_count'],
+                [sequelize.fn('AVG', sequelize.col('rating')), 'rating_avg'],
+            ],
+            raw: true,
+        });
+
+        const productJson = product.toJSON();
+
+        productJson.rating_count = parseInt(ratingStats.rating_count, 10) || 0;
+        productJson.rating_avg = ratingStats.rating_avg ? parseFloat(ratingStats.rating_avg).toFixed(2) : '0.00';
+
+        // Chuyển đổi chuỗi up_sell_ids và cross_sell_ids thành mảng số
+        productJson.up_sell_ids = product.up_sell_ids ? product.up_sell_ids.split(',').map(Number) : [];
+        productJson.cross_sell_ids = product.cross_sell_ids ? product.cross_sell_ids.split(',').map(Number) : [];
+
+        res.status(200).json(productJson);
+    } catch (error) {
+        console.error('Error fetching product by slug:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ.', error: error.message });
+    }
+};
+
 module.exports = {
     getAllProducts,
     createProduct,
@@ -523,6 +612,8 @@ module.exports = {
     uploadProductAlbum,
     deleteProductImage,
     getProductById,
+    getProductsByIds,
+    getProductBySlug,
     updateProductAttributes,
     uploadVariationImage,
     uploadVariationGallery,

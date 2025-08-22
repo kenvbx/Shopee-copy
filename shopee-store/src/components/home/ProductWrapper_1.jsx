@@ -6,7 +6,6 @@
 // ================================================================
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosInstance';
-import FeatureCard from '../common/FeatureCard';
 import ProductCard from '../common/ProductCard';
 import Slider from 'react-slick';
 import CategoryWithChildren from '../CategoryWithChildren';

@@ -4,32 +4,43 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Wishlist = sequelize.define(
-    'Wishlist',
-    {
-        id: {
-            type: DataTypes.BIGINT,
-            primaryKey: true,
-            autoIncrement: true,
-        },
-        user_id: {
-            type: DataTypes.BIGINT,
-            allowNull: true, // Cho phép null tạm thời, nhưng nên là false
-        },
-        product_id: {
-            type: DataTypes.BIGINT,
-            allowNull: true, // Cho phép null tạm thời, nhưng nên là false
-        },
-    },
-    {
-        tableName: 'wishlists',
-        timestamps: true, // Báo cho Sequelize biết bảng này có timestamps
-        createdAt: 'created_at', // Ánh xạ tới cột created_at
-        updatedAt: false, // Bảng của bạn không có cột updated_at
+module.exports = (sequelize, DataTypes) => {
+    class Wishlist extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            Wishlist.belongsTo(models.User, {
+                foreignKey: 'user_id',
+                as: 'User',
+            });
+            Wishlist.belongsTo(models.Product, {
+                foreignKey: 'product_id',
+                as: 'Product',
+            });
+        }
     }
-);
-
-module.exports = Wishlist;
+    Wishlist.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            user_id: DataTypes.BIGINT,
+            product_id: DataTypes.BIGINT,
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'Wishlist',
+            tableName: 'wishlists',
+            timestamps: false,
+        }
+    );
+    return Wishlist;
+};

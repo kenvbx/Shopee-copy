@@ -23,11 +23,9 @@ function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [galleryImages, setGalleryImages] = useState([]);
     const [activeTab, setActiveTab] = useState('description');
-    const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-    // Derived values for average rating and width for star bar
-    const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length : 0;
-    const ratingWidth = `${Math.round((avgRating / 5) * 100)}%`;
+    const [error, setError] = useState(null);
+    const API_URL = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -108,10 +106,25 @@ function ProductDetailPage() {
     const openReviewsTab = (e) => {
         e.preventDefault();
         setActiveTab('reviews');
-        // Scroll nhẹ tới cụm tab
-        const el = document.getElementById('product-tabs-root');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('product-tab-reviews')?.scrollIntoView({ behavior: 'smooth' });
     };
+
+    useEffect(() => {
+        if (product && product.id) {
+            const viewedProducts = JSON.parse(localStorage.getItem('viewedProducts')) || [];
+
+            // Remove the product if it already exists to move it to the front
+            const updatedViewed = viewedProducts.filter((id) => id !== product.id);
+
+            // Add the new product ID to the beginning of the array
+            updatedViewed.unshift(product.id);
+
+            // Keep only the latest 15 products
+            const finalViewed = updatedViewed.slice(0, 15);
+
+            localStorage.setItem('viewedProducts', JSON.stringify(finalViewed));
+        }
+    }, [product]); // This effect runs when the 'product' state changes
 
     if (loading) {
         return <div className="container pt_120 xs_pt_80 pb_120 xs_pb_80">Đang tải sản phẩm...</div>;
@@ -120,6 +133,11 @@ function ProductDetailPage() {
     if (!product) {
         return <div className="container pt_120 xs_pt_80 pb_120 xs_pb_80">Không tìm thấy sản phẩm.</div>;
     }
+
+    // Derived values for average rating and width for star bar
+    const avgRating = parseFloat(product.rating_avg) || 0;
+    const ratingCount = parseInt(product.rating_count, 10) || 0;
+    const ratingWidth = `${(avgRating / 5) * 100}%`;
 
     return (
         <main className="main">
@@ -205,15 +223,21 @@ function ProductDetailPage() {
                                             </del>
                                         </div>
 
-                                        <div className="ratings-container">
-                                            <div className="ratings-full">
-                                                <span className="ratings" style={{ width: ratingWidth }} />
-                                                <span className="tooltiptext tooltip-top">{avgRating.toFixed(2)}</span>
+                                        {ratingCount > 0 ? (
+                                            <div className="ratings-container">
+                                                <div className="ratings-full">
+                                                    <span className="ratings" style={{ width: ratingWidth }} />
+                                                    <span className="tooltiptext tooltip-top">{avgRating.toFixed(2)}</span>
+                                                </div>
+                                                <a href="#product-tab-reviews" onClick={openReviewsTab} className="link-to-tab rating-reviews">
+                                                    ( {ratingCount} đánh giá )
+                                                </a>
                                             </div>
-                                            <a href="#product-tab-reviews" onClick={openReviewsTab} className="link-to-tab rating-reviews">
-                                                ( {reviews.length} đánh giá )
-                                            </a>
-                                        </div>
+                                        ) : (
+                                            <div className="ratings-container">
+                                                <span className="rating-reviews">Chưa có đánh giá</span>
+                                            </div>
+                                        )}
 
                                         <p className="product-short-desc">{product.short_description}</p>
 

@@ -4,20 +4,41 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const ReviewImage = sequelize.define(
-    'ReviewImage',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        review_id: { type: DataTypes.BIGINT, allowNull: false },
-        image_url: { type: DataTypes.STRING, allowNull: false },
-    },
-    {
-        tableName: 'review_images',
-        timestamps: false,
+module.exports = (sequelize, DataTypes) => {
+    class ReviewImage extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            ReviewImage.belongsTo(models.ProductReview, {
+                foreignKey: 'review_id',
+                as: 'Review',
+            });
+        }
     }
-);
-
-module.exports = ReviewImage;
+    ReviewImage.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            review_id: {
+                type: DataTypes.BIGINT,
+                allowNull: false,
+            },
+            image_url: {
+                type: DataTypes.STRING(255),
+                allowNull: false,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'ReviewImage',
+            tableName: 'review_images',
+            timestamps: false, // Bảng này không có cột timestamps
+        }
+    );
+    return ReviewImage;
+};

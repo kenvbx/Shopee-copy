@@ -4,21 +4,43 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Option = sequelize.define(
-    'Option',
-    {
-        option_name: { type: DataTypes.STRING, allowNull: false, unique: true },
-        option_value: { type: DataTypes.TEXT('long') },
-    },
-    {
-        tableName: 'options',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
+module.exports = (sequelize, DataTypes) => {
+    class Option extends Model {
+        static associate(models) {
+            // Model này không có mối quan hệ trực tiếp nào
+        }
     }
-);
-
-module.exports = Option;
+    Option.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            option_name: {
+                type: DataTypes.STRING(191),
+                allowNull: false,
+                unique: true,
+            },
+            option_value: DataTypes.TEXT('long'),
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'Option',
+            tableName: 'options',
+            timestamps: false,
+        }
+    );
+    return Option;
+};

@@ -8,12 +8,14 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import { useQuickView } from '../../context/QuickViewContext';
 import api from '../../api/axiosInstance';
 
 function ProductCard({ product }) {
     const { addToCart } = useCart();
     const { addToWishlist, removeFromWishlist, wishlistItems } = useWishlist();
     const API_URL = import.meta.env.VITE_API_BASE_URL;
+    const { openQuickView } = useQuickView();
 
     const placeholderImg = 'https://placehold.co/204x204/EEE/31343C';
     const productLink = product.slug ? `/product/${product.slug}` : '#';
@@ -23,6 +25,11 @@ function ProductCard({ product }) {
     const handleAddToCart = (e) => {
         e.preventDefault();
         addToCart(product, 1);
+    };
+
+    const handleQuickViewClick = (e) => {
+        e.preventDefault(); // Ngăn chuyển trang
+        openQuickView(product.slug);
     };
 
     const handleWishlistClick = (e) => {
@@ -35,38 +42,10 @@ function ProductCard({ product }) {
         }
     };
 
-    // --- Derived rating/count fallbacks (support multiple API shapes) ---
-    const initialAverageRating = product?.average_rating ?? product?.avg_rating ?? product?.rating ?? (Array.isArray(product?.reviews) && product.reviews.length ? product.reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / product.reviews.length : 0);
-    const initialReviewCount = product?.review_count ?? product?.reviews_count ?? product?.reviewCount ?? (Array.isArray(product?.reviews) ? product.reviews.length : undefined);
-
-    const [averageRating, setAverageRating] = useState(Number(initialAverageRating) || 0);
-    const [reviewCount, setReviewCount] = useState(typeof initialReviewCount === 'number' ? initialReviewCount : undefined);
-
-    // If list endpoints don't include review_count, lazily fetch reviews to compute count
-    useEffect(() => {
-        // Only fetch if reviewCount is undefined (meaning API didn't provide it)
-        if (reviewCount === undefined && product?.id) {
-            let isMounted = true;
-            api.get(`/api/public/reviews/${product.id}`)
-                .then((res) => {
-                    if (!isMounted) return;
-                    const list = Array.isArray(res.data) ? res.data : [];
-                    setReviewCount(list.length);
-                    // derive avg rating if backend didn't provide it
-                    if (!product?.average_rating && !product?.avg_rating && !product?.rating) {
-                        const avg = list.length ? list.reduce((s, r) => s + (Number(r.rating) || 0), 0) / list.length : 0;
-                        setAverageRating(avg);
-                    }
-                })
-                .catch(() => {
-                    // if request fails, at least show 0 instead of hiding
-                    if (isMounted) setReviewCount(0);
-                });
-            return () => {
-                isMounted = false;
-            };
-        }
-    }, [product?.id, reviewCount]);
+    // --- BƯỚC 1: LẤY DỮ LIỆU RATING TRỰC TIẾP TỪ PROP 'product' ---
+    const avgRating = parseFloat(product.rating_avg) || 0;
+    const ratingCount = parseInt(product.rating_count, 10) || 0;
+    const ratingWidth = `${(avgRating / 5) * 100}%`;
 
     return (
         <div className="product product-border text-center">
@@ -87,7 +66,7 @@ function ProductCard({ product }) {
                     <a href="#" className={`btn-product-icon btn-wishlist ${isWished ? 'active' : ''}`} title="Thêm vào yêu thích" onClick={handleWishlistClick}>
                         <i className="d-icon-heart" />
                     </a>
-                    <a href="#" className="btn-product-icon btn-quickview" title="Quick View">
+                    <a href="#" className="btn-product-icon btn-quickview" title="Xem nhanh" onClick={handleQuickViewClick}>
                         <i className="d-icon-search" />
                     </a>
                     <a href="#" className="btn-product-icon btn-compare" title="Compare">
@@ -104,15 +83,20 @@ function ProductCard({ product }) {
                     <del class="old-price">{product.sale_price && <del>{new Intl.NumberFormat('vi-VN').format(product.price)} đ</del>}</del>
                 </div>
 
-                <div className="ratings-container">
-                    <div className="ratings-full">
-                        <span className="ratings" style={{ width: `${Math.max(0, Math.min(5, Number(averageRating) || 0)) * 20}%` }} />
-                        <span className="tooltiptext tooltip-top">{(Number(averageRating) || 0).toFixed(1)} / 5</span>
+                {ratingCount > 0 ? (
+                    <div className="ratings-container">
+                        <div className="ratings-full">
+                            <span className="ratings" style={{ width: ratingWidth }} />
+                            <span className="tooltiptext tooltip-top">{avgRating.toFixed(2)}</span>
+                        </div>
+                        <Link to={`/products/${product.slug}#product-tab-reviews`} className="rating-reviews">
+                            ( {ratingCount} đánh giá )
+                        </Link>
                     </div>
-                    <a href={`/product/${product.slug}#product-tab-reviews`} className="rating-reviews">
-                        ( {typeof reviewCount === 'number' ? reviewCount : 0} đánh giá )
-                    </a>
-                </div>
+                ) : (
+                    // Hiển thị một khoảng trống giữ chỗ để layout không bị vỡ
+                    <div className="ratings-container" style={{ height: '1.2em' }}></div>
+                )}
             </div>
         </div>
     );

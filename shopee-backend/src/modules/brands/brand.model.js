@@ -4,49 +4,63 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Brand = sequelize.define(
-    'Brand',
-    {
-        id: {
-            type: DataTypes.BIGINT,
-            primaryKey: true,
-            autoIncrement: true,
-        },
-        name: {
-            type: DataTypes.STRING(100),
-            allowNull: false,
-            unique: true,
-        },
-        slug: {
-            type: DataTypes.STRING(255),
-            unique: true,
-        },
-        parent_id: {
-            type: DataTypes.BIGINT,
-            allowNull: true,
-        },
-        description: {
-            type: DataTypes.TEXT,
-        },
-        logo_url: {
-            type: DataTypes.STRING(255),
-        },
-        status: {
-            type: DataTypes.ENUM('active', 'inactive'),
-            defaultValue: 'active',
-        },
-    },
-    {
-        tableName: 'product_brand',
-        timestamps: true,
-        paranoid: true,
-        createdAt: 'createdAt',
-        updatedAt: 'updateAt',
-        deletedAt: 'deletedAt',
+module.exports = (sequelize, DataTypes) => {
+    class Brand extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            Brand.hasMany(models.Product, {
+                foreignKey: 'brand_id',
+                as: 'Products',
+            });
+        }
     }
-);
+    Brand.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: DataTypes.STRING(100),
+            slug: DataTypes.STRING(255),
+            parent_id: DataTypes.BIGINT,
+            description: DataTypes.TEXT,
+            logo_url: DataTypes.STRING(255),
+            status: {
+                type: DataTypes.ENUM('active', 'inactive'),
+                defaultValue: 'active',
+            },
+            createdAt: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+                field: 'createdAt',
+            },
+            updatedAt: {
+                type: DataTypes.DATE,
+                field: 'updateAt', // Chú ý: Tên cột trong DB là 'updateAt'
+            },
+            deletedAt: {
+                type: DataTypes.DATE,
+                field: 'deletedAt',
+            },
+        },
+        {
+            sequelize,
+            modelName: 'Brand',
+            tableName: 'product_brand',
+            timestamps: true, // Bật timestamps vì bạn có các cột này
+            // Sequelize sẽ tự động tìm 'createdAt' và 'updatedAt'
+            // nhưng vì tên cột của bạn hơi khác, chúng ta cần chỉ định rõ
+            createdAt: 'createdAt',
 
-module.exports = Brand;
+            // Chú ý: Tên cột trong DB của bạn là 'updateAt' và 'deletedAt' (không có 'd')
+            // Sequelize mặc định tìm 'updatedAt'. Cần sửa lại cho khớp
+            updatedAt: 'updateAt',
+            deletedAt: 'deletedAt',
+        }
+    );
+    return Brand;
+};

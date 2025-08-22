@@ -7,14 +7,11 @@
 import React from 'react';
 import HomeSlider from '../components/home/HomeSlider';
 import DealsSection from '../components/home/DealsSection';
-import TestimonialSection from '../components/home/TestimonialSection';
-import BlogSection from '../components/home/BlogSection';
-import NewsletterSection from '../components/home/NewsletterSection';
 import ProductWrapper_1 from '../components/home/ProductWrapper_1';
 import ProductWrapper_2 from '../components/home/ProductWrapper_2';
 import ProductWrapper_3 from '../components/home/ProductWrapper_3';
 import BrandsWrapper from '../components/home/BrandsWrapper';
-import ProductTag from '../components/home/ProductTag';
+import ProductTab from '../components/home/ProductTab';
 import RecentView from '../components/home/RecentView';
 
 function HomePage() {
@@ -30,7 +27,7 @@ function HomePage() {
                         <ProductWrapper_2 />
                         <ProductWrapper_3 />
                         <BrandsWrapper />
-                        <ProductTag />
+                        <ProductTab />
                         <RecentView />
                     </div>
                 </section>

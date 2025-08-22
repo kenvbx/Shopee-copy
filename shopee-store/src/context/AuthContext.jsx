@@ -4,24 +4,25 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import api from '../api/axiosInstance';
 import { jwtDecode } from 'jwt-decode';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(localStorage.getItem('user_token'));
-    const [showAuthModal, setShowAuthModal] = useState(false);
-    const [authView, setAuthView] = useState('login');
     const [loading, setLoading] = useState(true);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [authView, setAuthView] = useState('login');
 
     useEffect(() => {
         const fetchUser = async () => {
             if (token) {
                 try {
-                    // Gọi API để lấy thông tin user đầy đủ
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                     const response = await api.get('/api/auth/me');
                     setUser(response.data);
                 } catch (error) {
@@ -34,35 +35,56 @@ export const AuthProvider = ({ children }) => {
         fetchUser();
     }, [token]);
 
-    const handleShowLogin = () => {
-        setAuthView('login');
-        setShowAuthModal(true);
+    const openModal = (view = 'login') => {
+        setAuthView(view);
+        setIsModalOpen(true);
     };
 
-    const handleShowRegister = () => {
-        setAuthView('register');
-        setShowAuthModal(true);
-    };
-
-    const handleCloseAuthModal = () => {
-        setShowAuthModal(false);
+    const closeModal = () => {
+        setIsModalOpen(false);
     };
 
     const switchToRegister = () => setAuthView('register');
     const switchToLogin = () => setAuthView('login');
 
-    const login = async (newToken) => {
-        localStorage.setItem('user_token', newToken);
-        setToken(newToken);
-        handleCloseAuthModal();
+    /**
+     * Hàm đăng nhập, gọi API và cập nhật state
+     * @param {string} email
+     * @param {string} password
+     */
+    const login = async (emailOrPhone, password) => {
+        try {
+            const response = await api.post('/api/auth/login', { emailOrPhone, password });
+            const newToken = response.data.token;
+
+            localStorage.setItem('user_token', newToken);
+
+            api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+            setToken(newToken); // Thao tác này sẽ trigger useEffect để fetch user
+
+            closeModal();
+            return response.data;
+        } catch (error) {
+            console.error('Lỗi đăng nhập:', error);
+            // Ném lỗi ra ngoài để component có thể bắt và hiển thị
+            throw error;
+        }
     };
 
+    /**
+     * Hàm đăng xuất
+     */
     const logout = () => {
         localStorage.removeItem('user_token');
         setToken(null);
         setUser(null);
+        delete api.defaults.headers.common['Authorization'];
     };
 
+    /**
+     * Cập nhật thông tin user (ví dụ: sau khi edit profile)
+     * @param {object} newUserData
+     */
     const updateUser = (newUserData) => {
         setUser((prevUser) => ({ ...prevUser, ...newUserData }));
     };
@@ -70,17 +92,18 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         token,
+        isAuthenticated: !!user,
         loading,
         login,
         logout,
-        showAuthModal,
+        updateUser,
+
+        isModalOpen,
         authView,
-        handleShowLogin,
-        handleShowRegister,
-        handleCloseAuthModal,
+        openModal,
+        closeModal,
         switchToRegister,
         switchToLogin,
-        updateUser,
     };
 
     return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

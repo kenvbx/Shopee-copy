@@ -4,24 +4,49 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/db.config');
+'use strict';
+const { Model } = require('sequelize');
 
-const Tag = sequelize.define(
-    'Tag',
-    {
-        id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
-        name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
-        slug: { type: DataTypes.STRING(100), unique: true },
-        description: { type: DataTypes.STRING(255) },
-        status: { type: DataTypes.ENUM('active', 'inactive'), defaultValue: 'active' },
-    },
-    {
-        tableName: 'product_tags',
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: false, // Bảng của bạn không có updatedAt
+module.exports = (sequelize, DataTypes) => {
+    class Tag extends Model {
+        static associate(models) {
+            // Định nghĩa các mối quan hệ
+            Tag.belongsToMany(models.Product, {
+                through: 'product_tag_map', // Tên bảng trung gian
+                foreignKey: 'tag_id',
+                otherKey: 'product_id',
+                as: 'Products',
+            });
+        }
     }
-);
-
-module.exports = Tag;
+    Tag.init(
+        {
+            id: {
+                type: DataTypes.BIGINT,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: {
+                type: DataTypes.STRING(100),
+                allowNull: false,
+            },
+            slug: DataTypes.STRING(100),
+            description: DataTypes.STRING(255),
+            status: {
+                type: DataTypes.ENUM('active', 'inactive'),
+                defaultValue: 'active',
+            },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: 'Tag',
+            tableName: 'product_tags',
+            timestamps: false,
+        }
+    );
+    return Tag;
+};

@@ -131,12 +131,12 @@ function CartPage() {
                                 </tbody>
                             </table>
                             <div className="cart-actions mb-6 pt-4">
-                                <a href="shop.html" className="btn btn-dark btn-md btn-rounded btn-icon-left mr-4 mb-4">
+                                <Link to="/products" className="btn btn-dark btn-md btn-rounded btn-icon-left mr-4 mb-4">
                                     <i className="d-icon-arrow-left" />
-                                    Continue Shopping
-                                </a>
+                                    Tiếp tục mua sắm
+                                </Link>
                                 <button type="submit" className="btn btn-outline btn-dark btn-md btn-rounded btn-disabled">
-                                    Update Cart
+                                    Cập nhật giỏ hàng
                                 </button>
                             </div>
                             <div className="cart-coupon-box mb-8">
