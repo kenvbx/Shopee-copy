@@ -4,15 +4,60 @@
 // Email: pthanhtuyen2411@gmail.com.
 // Tel: 0373707024
 // ================================================================
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuickView } from '../../context/QuickViewContext';
+import { useCart } from '../../context/CartContext';
 import Slider from 'react-slick';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
 const QuickViewModal = () => {
     const { isQuickViewOpen, closeQuickView, quickViewProduct, isQuickViewLoading } = useQuickView();
+    const { addToCart } = useCart();
+
+    const [quantity, setQuantity] = useState(1);
+    const [selectedVariation, setSelectedVariation] = useState(null);
+
+    useEffect(() => {
+        if (quickViewProduct) {
+            setQuantity(1);
+            // Nếu là sản phẩm đơn giản, không có biến thể
+            if (quickViewProduct.product_type === 'simple') {
+                setSelectedVariation({
+                    id: null, // Không có variation_id
+                    price: quickViewProduct.sale_price || quickViewProduct.price,
+                    stock: quickViewProduct.stock,
+                    sku: quickViewProduct.sku,
+                });
+            } else {
+                setSelectedVariation(null); // Reset lựa chọn biến thể cho sản phẩm variable
+            }
+        }
+    }, [quickViewProduct]);
+
+    const handleQuantityChange = (amount) => {
+        setQuantity((prev) => Math.max(1, prev + amount));
+    };
+
+    // Hàm xử lý khi bấm nút "Add to Cart"
+    const handleAddToCart = () => {
+        if (!quickViewProduct) return;
+
+        // Nếu là sản phẩm có biến thể nhưng chưa chọn, báo lỗi
+        if (quickViewProduct.product_type === 'variable' && !selectedVariation) {
+            toast.error('Vui lòng chọn một biến thể sản phẩm.');
+            return;
+        }
+
+        addToCart({
+            productId: quickViewProduct.id,
+            quantity: quantity,
+            variationId: selectedVariation?.id, // Gửi ID của biến thể đã chọn
+        });
+        toast.success('Đã thêm sản phẩm vào giỏ hàng!');
+    };
 
     if (!isQuickViewOpen) {
         return null;
@@ -22,17 +67,33 @@ const QuickViewModal = () => {
     const sliderSettings = {
         dots: true,
         infinite: true,
-        speed: 500,
+        speed: 3000,
         slidesToShow: 1,
         slidesToScroll: 1,
         arrows: true,
     };
 
-    const calculateRatingWidth = (avg) => {
-        if (!avg || avg <= 0) return '0%';
-        return `${(avg / 5) * 100}%`;
+    const isAddToCartDisabled = !selectedVariation || selectedVariation.stock <= 0;
+    const displayPrice = selectedVariation ? selectedVariation.price : quickViewProduct?.sale_price || quickViewProduct?.price;
+
+    const getRatingInfo = (product) => {
+        // Chuyển đổi giá trị nhận được thành số, nếu không hợp lệ thì mặc định là 0
+        const avg = parseFloat(product?.rating_avg) || 0;
+        const count = parseInt(product?.rating_count, 10) || 0;
+        const width = `${(avg / 5) * 100}%`;
+
+        return {
+            avg: avg.toFixed(2), // Giờ đây có thể gọi toFixed an toàn
+            count: count,
+            width: width,
+        };
     };
-    console.log(quickViewProduct);
+
+    const formatCurrency = (number) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(number);
+    };
+
+    const rating = getRatingInfo(quickViewProduct);
     return (
         <>
             <div className="mfp-bg mfp-product mfp-fade mfp-ready"></div>
@@ -67,26 +128,26 @@ const QuickViewModal = () => {
                                                 SKU: <span className="product-sku">{quickViewProduct.sku || 'N/A'}</span>
                                                 THƯƠNG HIỆU: <span className="product-brand">{quickViewProduct.Brand?.name || 'N/A'}</span>
                                             </div>
-                                            <div class="product-price">
-                                                {quickViewProduct.sale_price ? (
+                                            <div className="product-price">
+                                                {quickViewProduct?.sale_price && quickViewProduct?.sale_price < quickViewProduct?.price ? (
                                                     <>
-                                                        <ins class="new-price">{new Intl.NumberFormat('vi-VN').format(quickViewProduct.sale_price || quickViewProduct.price)} đ</ins>
-                                                        <del class="old-price">{quickViewProduct.sale_price && <del>{new Intl.NumberFormat('vi-VN').format(quickViewProduct.price)} đ</del>}</del>
+                                                        <ins className="new-price">{formatCurrency(displayPrice)}</ins>
+                                                        <del className="old-price">{formatCurrency(quickViewProduct.price)}</del>
                                                     </>
                                                 ) : (
-                                                    <ins class="new-price">{new Intl.NumberFormat('vi-VN').format(quickViewProduct.sale_price || quickViewProduct.price)} đ</ins>
+                                                    <ins className="new-price">{formatCurrency(displayPrice)}</ins>
                                                 )}
                                             </div>
 
-                                            {quickViewProduct.rating_count > 0 ? (
+                                            {rating.count > 0 ? (
                                                 <div className="ratings-container">
                                                     <div className="ratings-full">
-                                                        <span className="ratings" style={{ width: calculateRatingWidth(quickViewProduct.rating_avg) }} />
-                                                        <span className="tooltiptext tooltip-top">{quickViewProduct.rating_avg.toFixed(2)}</span>
+                                                        <span className="ratings" style={{ width: rating.width }} />
+                                                        <span className="tooltiptext tooltip-top">{rating.avg}</span>
                                                     </div>
-                                                    <Link to={`/products/${quickViewProduct.slug}#product-reviews`} className="link-to-tab rating-reviews">
-                                                        ( {quickViewProduct.rating_count} đánh giá )
-                                                    </Link>
+                                                    <a href={`/product/${quickViewProduct.slug}#product-tab-reviews`} className="link-to-tab rating-reviews">
+                                                        ( {rating.count} reviews )
+                                                    </a>
                                                 </div>
                                             ) : (
                                                 <div className="ratings-container">
@@ -98,24 +159,57 @@ const QuickViewModal = () => {
 
                                             {/* (Phần chọn biến thể, số lượng, và add to cart sẽ cần logic phức tạp hơn và có thể thêm sau) */}
 
+                                            {quickViewProduct.product_type === 'variable' && quickViewProduct.Variations?.length > 0 && (
+                                                <div className="product-form">
+                                                    <label>Lựa chọn:</label>
+                                                    <div className="product-variations">
+                                                        {quickViewProduct.Variations.map((v) => (
+                                                            <a
+                                                                href="#"
+                                                                key={v.id}
+                                                                className={`variation-item ${selectedVariation?.id === v.id ? 'active' : ''}`}
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    setSelectedVariation(v);
+                                                                }}
+                                                            >
+                                                                {v.attribute_title}
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <hr className="product-divider" />
+
                                             <div className="product-form product-qty">
                                                 <div className="product-form-group">
                                                     <div className="input-group mr-2">
-                                                        <button className="quantity-minus d-icon-minus" />
-                                                        <input className="quantity form-control" type="number" min={1} max={1000000} />
-                                                        <button className="quantity-plus d-icon-plus" />
+                                                        <button className="quantity-minus d-icon-minus" onClick={() => handleQuantityChange(-1)} />
+                                                        <input className="quantity form-control" type="number" value={quantity} min={1} max={1000} readOnly />
+                                                        <button className="quantity-plus d-icon-plus" onClick={() => handleQuantityChange(1)} />
                                                     </div>
-                                                    <button className="btn-product btn-cart text-normal ls-normal font-weight-semi-bold" disabled="disabled">
+                                                    <button className="btn-product btn-cart" onClick={handleAddToCart} disabled={isAddToCartDisabled}>
                                                         <i className="d-icon-bag" />
-                                                        Add to Cart
+                                                        {isAddToCartDisabled ? 'Hết hàng' : 'Thêm vào giỏ'}
                                                     </button>
                                                 </div>
                                             </div>
+
                                             <hr className="product-divider mb-3" />
                                             <div className="product-footer">
+                                                <div className="social-links mr-4">
+                                                    <a href="#" className="social-link social-facebook fab fa-facebook-f" />
+                                                    <a href="#" className="social-link social-twitter fab fa-twitter" />
+                                                    <a href="#" className="social-link social-pinterest fab fa-pinterest-p" />
+                                                </div>
                                                 <a href="#" className="btn-product btn-wishlist mr-4">
-                                                    <i className="d-icon-heart"></i>Add to wishlist
+                                                    <i className="d-icon-heart" />
+                                                    Add to wishlist
+                                                </a>
+                                                <a href="#" className="btn-product btn-compare">
+                                                    <i className="d-icon-compare" />
+                                                    Add to compare
                                                 </a>
                                             </div>
                                         </div>

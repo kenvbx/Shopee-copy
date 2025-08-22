@@ -5,17 +5,25 @@
 // Tel: 0373707024
 // ================================================================
 const { Wishlist, Product } = require('../../models');
+const db = require('../../models');
+const { Op } = db.Sequelize;
 
 // Lấy danh sách yêu thích của người dùng
 const getMyWishlist = async (req, res) => {
     try {
         const userId = req.user.id;
-        const wishlistItems = await Wishlist.findAll({
+        const wishlist = await db.Wishlist.findAll({
             where: { user_id: userId },
-            include: [{ model: Product, attributes: ['id', 'name', 'slug', 'price', 'main_image'] }],
+            include: [
+                {
+                    model: db.Product,
+                    as: 'Product',
+                    attributes: ['id', 'name', 'slug', 'price', 'sale_price', 'main_image', 'stock_status'],
+                },
+            ],
             order: [['created_at', 'DESC']],
         });
-        res.status(200).json(wishlistItems);
+        res.status(200).json(wishlist);
     } catch (error) {
         res.status(500).json({ message: 'Lỗi máy chủ.' });
     }

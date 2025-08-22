@@ -5,26 +5,91 @@
 // Tel: 0373707024
 // ================================================================
 const { Cart, CartItem, Product, sequelize } = require('../../models');
+const db = require('../../models');
+
+// Lấy thông tin giỏ hàng
+const getCart = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const cart = await db.Cart.findOne({
+            where: { user_id: userId },
+            include: [
+                {
+                    model: db.CartItem,
+                    as: 'CartItems',
+                    include: [
+                        {
+                            model: db.Product,
+                            as: 'Product',
+                            attributes: ['id', 'name', 'slug', 'price', 'sale_price', 'main_image', 'stock'],
+                        },
+                        {
+                            model: db.Variation,
+                            as: 'Variation',
+                        },
+                    ],
+                },
+            ],
+            order: [[{ model: db.CartItem, as: 'CartItems' }, 'added_at', 'DESC']],
+        });
+
+        if (!cart) {
+            // Nếu không có giỏ hàng, trả về một giỏ hàng trống
+            return res.status(200).json({ CartItems: [] });
+        }
+
+        res.status(200).json(cart);
+    } catch (error) {
+        console.error('Lỗi khi lấy giỏ hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ.', error: error.message });
+    }
+};
 
 // Thêm sản phẩm vào giỏ hàng
 const addToCart = async (req, res) => {
     try {
+        // --- BƯỚC GỠ LỖI QUAN TRỌNG ---
+        // In ra toàn bộ nội dung body mà server nhận được
+        console.log('--- DỮ LIỆU NHẬN ĐƯỢC TỪ FRONTEND ---');
+        console.log(req.body);
+        console.log('------------------------------------');
+        // ------------------------------------
         const userId = req.user.id; // Lấy từ authMiddleware
         const { productId, variationId, quantity } = req.body;
 
-        // Tìm hoặc tạo giỏ hàng cho người dùng
-        const [cart] = await Cart.findOrCreate({ where: { user_id: userId } });
+        // Dòng log cũ của bạn để kiểm tra
+        console.log('ID sản phẩm:', productId);
 
-        // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
-        const [cartItem, created] = await CartItem.findOrCreate({
-            where: { cart_id: cart.id, product_id: productId, variation_id: variationId || null },
-            defaults: { quantity: quantity },
+        if (!productId || !quantity) {
+            return res.status(400).json({ message: 'Thiếu thông tin sản phẩm hoặc số lượng.' });
+        }
+
+        // Tìm hoặc tạo giỏ hàng cho người dùng
+        const [cart] = await db.Cart.findOrCreate({ where: { user_id: userId } });
+
+        const existingItem = await db.CartItem.findOne({
+            where: {
+                cart_id: cart.id,
+                product_id: productId, // 2. Sử dụng productId cho truy vấn
+                variation_id: variationId || null,
+            },
         });
 
-        // Nếu sản phẩm đã có, cộng thêm số lượng
-        if (!created) {
-            cartItem.quantity += quantity;
-            await cartItem.save();
+        if (existingItem) {
+            // Nếu đã có, chỉ cập nhật số lượng
+            existingItem.quantity += quantity;
+            await existingItem.save();
+            res.status(200).json(existingItem);
+        } else {
+            // Nếu chưa có, tạo mới
+            const newItem = await db.CartItem.create({
+                cart_id: cart.id,
+                product_id: productId, // 3. Sử dụng productId để tạo mới
+                variation_id: variationId || null,
+                quantity: quantity,
+            });
+            res.status(201).json(newItem);
         }
 
         res.status(200).json(cartItem);
@@ -53,25 +118,6 @@ const updateCartItem = async (req, res) => {
         }
 
         res.status(200).json({ message: 'Cập nhật số lượng thành công.' });
-    } catch (error) {
-        res.status(500).json({ message: 'Lỗi máy chủ.', error: error.message });
-    }
-};
-
-// Lấy thông tin giỏ hàng
-const getCart = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const cart = await Cart.findOne({
-            where: { user_id: userId },
-            include: [
-                {
-                    model: CartItem,
-                    include: [{ model: Product, attributes: ['name', 'price', 'main_image'] }],
-                },
-            ],
-        });
-        res.status(200).json(cart);
     } catch (error) {
         res.status(500).json({ message: 'Lỗi máy chủ.', error: error.message });
     }

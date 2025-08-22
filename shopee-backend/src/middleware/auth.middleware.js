@@ -5,26 +5,36 @@
 // Tel: 0373707024
 // ================================================================
 const jwt = require('jsonwebtoken');
-const User = require('../modules/auth/user.model');
+const { User } = require('../models');
 
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Lấy token từ header "Bearer TOKEN"
+const authMiddleware = async (req, res, next) => {
+    let token;
 
-    if (token == null) {
-        // Nếu không có token, trả về lỗi 401
-        return res.status(401).json({ message: 'Token không được cung cấp.' });
+    // Token thường được gửi trong header 'Authorization' theo dạng 'Bearer <token>'
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            // 1. Lấy token từ header
+            token = req.headers.authorization.split(' ')[1];
+
+            // 2. Giải mã token để lấy payload (chứa id người dùng)
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            // 3. Lấy thông tin người dùng từ DB và gắn vào request
+            // Gắn vào request để các hàm controller sau có thể sử dụng
+            req.user = await User.findByPk(decoded.id, {
+                attributes: { exclude: ['password'] }, // Loại bỏ trường password
+            });
+
+            next(); // Chuyển tiếp đến controller
+        } catch (error) {
+            console.error(error);
+            return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
+        }
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            // Nếu token sai hoặc hết hạn, trả về lỗi 403
-            return res.status(403).json({ message: 'Token không hợp lệ.' });
-        }
-        // Nếu token hợp lệ, lưu thông tin user vào request và đi tiếp
-        req.user = user;
-        next();
-    });
+    if (!token) {
+        return res.status(401).json({ message: 'Không tìm thấy token. Yêu cầu truy cập bị từ chối.' });
+    }
 };
 
-module.exports = authenticateToken;
+module.exports = authMiddleware;

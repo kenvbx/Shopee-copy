@@ -5,16 +5,18 @@
 // Tel: 0373707024
 // ================================================================
 const express = require('express');
-const dotenv = require('dotenv');
 const cors = require('cors');
+const dotenv = require('dotenv');
 const path = require('path');
 
 dotenv.config();
 
 // 1. Lấy object 'db' từ models/index.js, nó chứa instance sequelize
 const db = require('./src/models');
+const apiRoutes = require('./src/api');
 
 const app = express();
+const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors());
@@ -24,12 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (ảnh upload)
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
-// Routes
-const apiRoutes = require('./src/api'); // Giả sử bạn có file /src/api/index.js để gom các route
 app.use('/api', apiRoutes);
-
-// Cổng server
-const PORT = process.env.PORT || 3001;
 
 // 2. Sử dụng db.sequelize để kiểm tra kết nối và khởi động server
 db.sequelize
